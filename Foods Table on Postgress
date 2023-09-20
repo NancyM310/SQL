@@ -1,0 +1,252 @@
+/* 
+  uploaded data to postgress database
+*/
+
+
+/*
+	count the number of food records
+*/
+
+SELECT 
+	COUNT(item_name)
+FROM
+	foods
+;
+	
+	
+/*
+	select all items
+*/
+
+SELECT
+	  f.price_last_updated_ts
+	, f.food_id
+	, f.item_name
+	, f.storage_type
+	, f.package_size
+	, f.package_size_uom
+	, f.brand_name
+	, f.package_price
+		
+from
+	foods f
+;
+	
+/*
+	change the name of package_size_uom to 
+	something that is not as criptic to users
+*/
+
+SELECT
+	  f.food_id
+	, f.item_name
+	, f.storage_type
+	, f.package_size
+	, f.package_size_uom as package_size_unit_of_measure
+	, f.brand_name
+	, f.package_price
+	, f.price_last_updated_ts	
+from
+	foods f
+;
+	
+/*
+	select foods that are private label
+*/
+SELECT
+	  f.food_id
+	, f.item_name
+	, f.storage_type
+	, f.package_size
+	, f.package_size_uom as package_size_unit_of_measure
+	, f.brand_name
+	, f.package_price
+	, f.price_last_updated_ts	
+from
+	foods f
+where f.brand_name = 'H-E-B (private label)'
+	or f.brand_name = lower ('h-e-b (private label)')
+;
+
+/*
+	rewrite column brand_name 
+	'H-E-B (private labe) in lowercase'
+*/
+
+SELECT
+	  f.food_id
+	, f.item_name
+	, f.storage_type
+	, f.package_size
+	, f.package_size_uom as package_size_unit_of_measure
+	, lower(f.brand_name) as lower_brand_name
+	, f.package_price
+	, f.price_last_updated_ts	
+from
+	foods f
+;
+
+/*
+	add a new column to show if an item is a canned item
+*/
+
+SELECT
+	  f.food_id
+	, f.item_name
+	, f.storage_type
+	, f.package_size
+	, f.package_size_uom as package_size_unit_of_measure
+	, f.brand_name
+	, f.package_price
+	, f.price_last_updated_ts
+	, case when item_name ilike '%canned%' then 'y' else 'n' end as is_canned_yn
+from
+	foods f
+;
+
+
+/*
+	locate records where null value for brand name
+*/
+
+SELECT
+	  f.food_id
+	, f.item_name
+	, f.storage_type
+	, f.package_size
+	, f.package_size_uom as package_size_unit_of_measure
+	, f.brand_name
+	, f.package_price
+	, f.price_last_updated_ts
+from
+	foods f
+where
+	brand_name is null
+;
+
+
+/*
+	how many items for each brand name asc and desc
+*/
+
+SELECT
+	f.brand_name
+  , count(f.brand_name) as record_count
+from
+	foods f
+group by 
+	f.brand_name 
+order by r
+	record_count asc
+;
+
+select
+	f.brand_name
+  , count(f.brand_name) as record_count
+from
+	foods f
+group by 
+	f.brand_name 
+order by 
+	record_count desc
+;
+
+
+/*
+	select unique brand names
+*/
+
+select
+	distinct
+		brand_name
+from
+	foods f
+;
+
+
+/* 
+	update storage type null to unkown
+*/
+
+select
+	distinct
+		storage_type
+from
+	foods f
+;
+
+update foods
+	set storage_type = 'unkown'
+	where storage_type is null	
+;
+
+/*
+	return all records in the foods table 
+	where food id 13, 15, 17 and brand name is HEB private label
+*/	
+
+select
+	  f.food_id
+	, f.item_name
+	, f.storage_type
+	, f.package_size
+	, f.package_size_uom as package_size_unit_of_measurement
+	, brand_name
+	, package_price
+	, price_last_updated_ts
+from 
+	foods f
+where 
+	(   food_id = 13
+	or food_id = 15
+	or food_id = 17
+	 )
+	and brand_name ilike 'h-e-b (private label)'
+;  
+
+
+/*
+
+	count of number of items in brand name
+	and storage type 
+*/
+
+select
+	  f.brand_name
+	, f.storage_type
+	, count(*) as record_count
+from 
+	foods f
+group by
+	  f.brand_name
+	, f.storage_type
+;
+
+
+/*
+	get the percent of private label brands
+	
+	steps
+	1. get the total number of records that are heb private label
+	2. get the total number of records across the table
+	3. take #1 divided by #2
+*/
+
+select
+	cast(n.heb_records as decimal(10,2) ) / cast(d.total_records as decimal (10,2) )
+from
+	(
+		select
+			count(*) as heb_records
+		from
+			foods f
+		where
+			f.brand_name ilike 'h-e-b (private label)'
+	 ) n -- numerator
+	 	cross join (
+						select
+							count(*) as total_records
+						from 
+							foods f
+						) d -- denominator
+;
